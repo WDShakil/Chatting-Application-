@@ -1,0 +1,5 @@
+1. Create Firebase Account
+2. Create Componet folder and create firebaseConfig.js past code from firebase 
+3. import firebaseConfig into main.js
+4. create firebase Authentication
+5. Go to Firebase authentication in web > find the web and copy the code from Sign up new users also page into your code where are no error found. if everything okay the user info will be send into database.
