@@ -33,10 +33,8 @@ function Dashboard() {
   // firebase Storage
   const storage = getStorage();
 
-  const defaultSrc =
-    "https://raw.githubusercontent.com/roadmanfong/react-cropper/master/example/img/child.jpg";
-  const [image, setImage] = useState(defaultSrc);
-  const [cropData, setCropData] = useState("#");
+  const [image, setImage] = useState(profileimg);
+  const [cropData, setCropData] = useState(null);
   const cropperRef = createRef();
   const onChange = (e) => {
     e.preventDefault();
@@ -132,7 +130,7 @@ function Dashboard() {
           className="relative rounded-full  group bg-white w-[50px] h-[50px] cursor-pointer mx-auto group overflow-hidden"
         >
           <img
-            src={cropData ? cropData : profileimg}
+            src={cropData ? cropData : image}
             className="w-full rounded-full h-full object-cover"
             alt=""
           />
