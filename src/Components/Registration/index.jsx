@@ -3,23 +3,29 @@ import { Link, useNavigate } from "react-router-dom";
 import regimg from "../../assets/regimg.jpg";
 import loading from "../../assets/loading.gif";
 import { RxEyeOpen, RxEyeClosed } from "react-icons/rx";
+
 // firebase
 import {
   getAuth,
   createUserWithEmailAndPassword,
   sendEmailVerification,
+  updateProfile,
 } from "firebase/auth";
 
 function Registration() {
-  // Navigate to login page
+  const auth = getAuth();
+
+  // Navigate
   const navigate = useNavigate();
+
   // Signin loading
   const [signinloading, isSigninloading] = useState(false);
+
   // firbase
-  const auth = getAuth();
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [passwordInputType, setPasswordInputType] = useState("password");
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -67,36 +73,42 @@ function Registration() {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      const { email, password } = formData;
+      const { name, email, password } = formData;
       // The form is valid, you can submit it
-      // console.log("Form data:", formData);
-      // Firebase Authentication
-      createUserWithEmailAndPassword(auth, email, password);
-      sendEmailVerification(auth.currentUser)
-        .then(() => {
-          setSuccess(true);
-          isSigninloading(true);
-          setFormData({
-            name: "",
-            email: "",
-            password: "",
+      createUserWithEmailAndPassword(auth, email, password)
+        .then((user) => {
+          updateProfile(auth.currentUser, {
+            displayName: name,
+          }).then(() => {
+            sendEmailVerification(auth.currentUser)
+              .then(() => {
+                setSuccess(true);
+                isSigninloading(true);
+                setFormData({
+                  name: "",
+                  email: "",
+                  password: "",
+                });
+
+                setTimeout(() => {
+                  setSuccess(false);
+                  navigate("/login");
+                }, 3000);
+              })
+              .catch((error) => {
+                const errorMessage = error.code;
+                if (errorMessage.includes("auth/email-already-in-use")) {
+                  setErrors({ ...newErrors, usedmail: "email-already used" });
+                }
+              });
+
+            // Clear input values after submission
           });
-
-          setTimeout(() => {
-            setSuccess(false);
-            navigate("/login");
-          }, 3000);
         })
-        .catch((error) => {
-          const errorMessage = error.code;
-          if (errorMessage.includes("auth/email-already-in-use")) {
-            setErrors({ ...newErrors, usedmail: "email-already used" });
-          }
-          console.log(errors.usedmail);
-          console.log(errorMessage);
-        });
 
-      // Clear input values after submission
+        .catch((error) => {
+          console.log(error.message);
+        });
     }
   };
 
@@ -173,7 +185,7 @@ function Registration() {
               <div className=" w-100 lg:w-[470px] mt-5">
                 {success && (
                   <p className="bg-green-500 transition-all text-white px-5 py-2 flex justify-between my-4 rounded-sm items-center">
-                    Registration Successful
+                    Registration Successful. Please verify your email address.
                     <span
                       className="cursor-pointer"
                       onClick={() => {

@@ -5,7 +5,7 @@ import { FiSearch } from "react-icons/fi";
 import { PiDotsThreeVerticalBold } from "react-icons/pi";
 function Mainpage() {
   return (
-    <div className="w-[1300px] flex flex-wrap justify-between px-5 h-full ">
+    <div className="w-full flex flex-wrap justify-between px-5 h-full ">
       {/* First Part  */}
       <div className="w-full md:w-1/2 lg:w-[30%]  h-auto">
         {/* Search Bar  */}

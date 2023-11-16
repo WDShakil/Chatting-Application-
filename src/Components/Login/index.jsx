@@ -20,6 +20,7 @@ import {
 
 function Login() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   // Facebook Login
   const FacebookProvider = new FacebookAuthProvider();
@@ -30,7 +31,6 @@ function Login() {
   const [forgetPasswordSuccess, setForgetPasswordSuccess] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [passwordInputType, setPasswordInputType] = useState("password");
   const [formData, setFormData] = useState({
@@ -73,18 +73,17 @@ function Login() {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      // The form is valid, you can submit it
       const auth = getAuth();
       const { email, password } = formData;
+
       signInWithEmailAndPassword(auth, email, password)
-        .then(() => {
+        .then((user) => {
           // Signed in
-          localStorage.setItem(
-            "userInfo",
-            JSON.stringify(userLoginInfo(formData))
-          );
-          dispatch(userLoginInfo(formData));
+          localStorage.setItem("userInfo", JSON.stringify(userLoginInfo(user)));
+          dispatch(userLoginInfo(user));
+          console.log(user);
           setLoading(true);
+
           setTimeout(() => {
             navigate("/dashboard");
             setLoading(false);

@@ -6,19 +6,8 @@ import { SlSettings } from "react-icons/sl";
 import { VscSignOut } from "react-icons/vsc";
 import { AiOutlineCloudUpload } from "react-icons/ai";
 import { PiDownloadSimpleLight } from "react-icons/pi";
-import "./loading.css";
-// Naviget
 import { useNavigate } from "react-router-dom";
-// Firebase
-import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
-import Mainpage from "../MainPage";
-import { useEffect, useState, createRef } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import Verification from "../Verification";
-// Cropper js
 import Cropper from "react-cropper";
-import "cropperjs/dist/cropper.css";
-// Firbase Storage
 import {
   getDownloadURL,
   getStorage,
@@ -26,24 +15,52 @@ import {
   uploadString,
 } from "firebase/storage";
 
+import "./loading.css";
+import "cropperjs/dist/cropper.css";
+
+// Firebase
+import {
+  getAuth,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+} from "firebase/auth";
+import { useEffect, useState, createRef } from "react";
+import { useSelector, useDispatch } from "react-redux";
+
+import Verification from "../Verification";
+import Mainpage from "../MainPage";
+import { userLoginInfo } from "../../slices/userslice";
+
+// Firbase Storage
+
 function Dashboard() {
+  const auth = getAuth();
+
   const [downloader, setDownloader] = useState(false);
+  const [userVerify, setUserVerify] = useState(false);
+  const [cropData, setCropData] = useState(null);
+  const [profilePopUp, setProfilePopUp] = useState(false);
   const [downloadURL, setDownloadURL] = useState("");
+  const [image, setImage] = useState("");
 
   // firebase Storage
   const storage = getStorage();
-
-  const [image, setImage] = useState(profileimg);
-  const [cropData, setCropData] = useState(null);
   const cropperRef = createRef();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const onChange = (e) => {
     e.preventDefault();
+
     let files;
+
     if (e.dataTransfer) {
       files = e.dataTransfer.files;
     } else if (e.target) {
       files = e.target.files;
     }
+
     const reader = new FileReader();
     reader.onload = () => {
       setImage(reader.result);
@@ -51,39 +68,15 @@ function Dashboard() {
     reader.readAsDataURL(files[0]);
   };
 
-  const getCropData = () => {
-    setDownloader(true);
-    if (typeof cropperRef.current?.cropper !== "undefined") {
-      setCropData(cropperRef.current?.cropper.getCroppedCanvas().toDataURL());
-      const storageRef = ref(storage, auth.currentUser.uid);
-
-      uploadString(storageRef, cropData, "data_url")
-        .then(() => {
-          console.log("Uploaded a data_url string!");
-          return getDownloadURL(storageRef);
-        })
-
-        .then((url) => {
-          console.log("File available at", url);
-          setDownloadURL(url);
-        })
-        .catch((error) => {
-          console.error("Error uploading or getting download URL:", error);
-        });
-      setTimeout(() => {
-        setProfilePopUp(false);
-        setDownloader(false);
-      }, 2000);
-    }
-  };
-
-  const auth = getAuth();
   const data = useSelector((state) => state.userLoginInfo.userInfo);
+
   useEffect(() => {
     if (!data) {
       navigate("/");
+    } else {
+      // Set the image state using the photoURL from the data
+      setImage(data.photoURL);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
   useEffect(() => {
@@ -91,22 +84,54 @@ function Dashboard() {
       if (user && user.emailVerified) {
         setUserVerify(true);
       }
+      if (userVerify) {
+        localStorage.setItem("userInfo", JSON.stringify(userLoginInfo(user)));
+        dispatch(userLoginInfo(user));
+      }
     });
 
     return () => unsubscribe();
   }, [auth]);
 
-  const [userVerify, setUserVerify] = useState(false);
+  const getCropData = () => {
+    setDownloader(true);
+
+    if (typeof cropperRef.current?.cropper !== "undefined") {
+      const storageRef = ref(storage, auth.currentUser.uid);
+
+      setCropData(cropperRef.current?.cropper.getCroppedCanvas().toDataURL());
+
+      uploadString(storageRef, cropData, "data_url")
+        .then(() => {
+          return getDownloadURL(storageRef);
+        })
+        .then((url) => {
+          setDownloadURL(url);
+
+          // Update user profile with the new photoURL
+          updateProfile(auth.currentUser, {
+            photoURL: url,
+          });
+
+          // Close the profile upload popup
+        })
+        .catch((error) => {
+          console.error("Error uploading or getting download URL:", error);
+        })
+        .finally(() => {
+          setProfilePopUp(false);
+          setDownloader(false);
+        });
+    }
+  };
 
   // eslint-disable-next-line no-unused-vars
-  const dispatch = useDispatch();
 
-  const navigate = useNavigate();
   const handleLogout = () => {
     signOut(auth)
       .then(() => {
         localStorage.removeItem("userInfo");
-        dispatch({ type: "CLEAR_USER_INFO" });
+        dispatch(userLoginInfo(null));
         navigate("/login");
       })
       .catch((error) => {
@@ -116,10 +141,10 @@ function Dashboard() {
   };
 
   // Profile Handler
-  const [profilePopUp, setProfilePopUp] = useState(false);
   const handleProfilePopUp = () => {
     setProfilePopUp(true);
   };
+
   return (
     <section className="min-h-screen w-full p-5 relative flex ">
       {/* Menu Bar  */}
@@ -130,7 +155,7 @@ function Dashboard() {
           className="relative rounded-full  group bg-white w-[50px] h-[50px] cursor-pointer mx-auto group overflow-hidden"
         >
           <img
-            src={cropData ? cropData : image}
+            src={image}
             className="w-full rounded-full h-full object-cover"
             alt=""
           />
@@ -139,9 +164,9 @@ function Dashboard() {
           </div>
         </div>
         {/* Home Menu  */}
-        <div className="flex justify-center ">
-          <div className="bg-white p-1 rounded-xl mt-8">
-            <LiaHomeSolid className=" text-[30px] text-[#5F35F5]"></LiaHomeSolid>
+        <div className="flex justify-center items-center">
+          <div className="after:bg-white after:content-[''] after:z-[-1] after:top-0 after:left-0 after:w-full after:h-full after:absolute relative mt-8">
+            <LiaHomeSolid className=" text-[30px] text-[#a49bc1] z-[1]"></LiaHomeSolid>
           </div>
         </div>
         {/* Chate Menu  */}
@@ -166,7 +191,7 @@ function Dashboard() {
           </div>
         </div>
         {/* Logout menu  */}
-        <div className="absolute bottom-3   left-[25px]">
+        <div className="absolute bottom-3 left-[50%] translate-x-[-50%]">
           <div
             className="flex justify-center cursor-pointer"
             onClick={handleLogout}
@@ -179,9 +204,10 @@ function Dashboard() {
       </div>
       {/* Menu bar end  */}
       {userVerify ? <Mainpage></Mainpage> : <Verification></Verification>}
+      {/* profile upload pop up  */}
       {profilePopUp && (
-        <div className="w-full bg-[#272727cc] h-fit flex justify-center items-center left-0 top-0 absolute">
-          <div className="bg-white shadow-2xl w-[50%] mx-auto  p-4 rounded-lg">
+        <div className="w-full bg-[#272727cc] h-full flex justify-center items-center left-0 top-0 absolute">
+          <div className="bg-white shadow-2xl w-[95%] lg:w-[50%] mx-auto  p-4 rounded-lg">
             <div className="flex justify-between items-center py-2">
               <h2 className=" text-black  text-xl font-bold ">
                 Upload Your Profile
@@ -232,10 +258,7 @@ function Dashboard() {
                     </div>
                   )}
                 </button>
-                <button
-                  onClick={downloadURL}
-                  className=" bg-[#2eb861]  text-white h-11 px-3"
-                >
+                <button className=" bg-[#2eb861]  text-white h-11 px-3">
                   <PiDownloadSimpleLight></PiDownloadSimpleLight>
                 </button>
               </div>

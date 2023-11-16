@@ -11,9 +11,6 @@ export const userSlice = createSlice({
     userLoginInfo: (state, action) => {
       state.userInfo = action.payload;
     },
-    CLEAR_USER_INFO: (state) => {
-      state.userInfo = null;
-    },
   },
 });
 
