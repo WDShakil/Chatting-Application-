@@ -98,10 +98,9 @@ function Dashboard() {
 
   useEffect(() => {
     onAuthStateChanged(auth, (user) => {
-      if (user) {
+      if (user.emailVerified) {
         localStorage.setItem("userInfo", JSON.stringify(userLoginInfo(user)));
         dispatch(userLoginInfo(user));
-        const uid = user.uid;
         setUserVerify(true);
       }
     });

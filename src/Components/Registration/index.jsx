@@ -5,6 +5,8 @@ import loading from "../../assets/loading.gif";
 import { RxEyeOpen, RxEyeClosed } from "react-icons/rx";
 
 // firebase
+import { getDatabase, ref, set } from "firebase/database";
+
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -14,6 +16,7 @@ import {
 
 function Registration() {
   const auth = getAuth();
+  const db = getDatabase();
 
   // Navigate
   const navigate = useNavigate();
@@ -101,11 +104,12 @@ function Registration() {
                   setErrors({ ...newErrors, usedmail: "email-already used" });
                 }
               });
-
-            // Clear input values after submission
+          });
+          set(ref(db, "users/" + user.user.uid), {
+            username: name,
+            email: email,
           });
         })
-
         .catch((error) => {
           console.log(error.message);
         });
