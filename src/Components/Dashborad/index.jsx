@@ -37,12 +37,13 @@ import { userLoginInfo } from "../../slices/userslice";
 function Dashboard() {
   const auth = getAuth();
 
-  const [downloader, setDownloader] = useState(false);
   const [userVerify, setUserVerify] = useState(false);
+  const [downloader, setDownloader] = useState(false);
   const [cropData, setCropData] = useState(null);
   const [profilePopUp, setProfilePopUp] = useState(false);
+
   const [downloadURL, setDownloadURL] = useState("");
-  const [image, setImage] = useState("");
+  const [image, setImage] = useState(profileimg);
 
   // firebase Storage
   const storage = getStorage();
@@ -52,7 +53,7 @@ function Dashboard() {
 
   const onChange = (e) => {
     e.preventDefault();
-
+    console.log(e.dataTransfer);
     let files;
 
     if (e.dataTransfer) {
@@ -68,34 +69,7 @@ function Dashboard() {
     reader.readAsDataURL(files[0]);
   };
 
-  const data = useSelector((state) => state.userLoginInfo.userInfo);
-
-  useEffect(() => {
-    if (!data) {
-      navigate("/");
-    } else {
-      // Set the image state using the photoURL from the data
-      setImage(data.photoURL);
-    }
-  }, [data]);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && user.emailVerified) {
-        setUserVerify(true);
-      }
-      if (userVerify) {
-        localStorage.setItem("userInfo", JSON.stringify(userLoginInfo(user)));
-        dispatch(userLoginInfo(user));
-      }
-    });
-
-    return () => unsubscribe();
-  }, [auth]);
-
   const getCropData = () => {
-    setDownloader(true);
-
     if (typeof cropperRef.current?.cropper !== "undefined") {
       const storageRef = ref(storage, auth.currentUser.uid);
 
@@ -107,25 +81,38 @@ function Dashboard() {
         })
         .then((url) => {
           setDownloadURL(url);
-
-          // Update user profile with the new photoURL
-          updateProfile(auth.currentUser, {
-            photoURL: url,
-          });
-
-          // Close the profile upload popup
+          setProfilePopUp(false);
         })
         .catch((error) => {
           console.error("Error uploading or getting download URL:", error);
-        })
-        .finally(() => {
-          setProfilePopUp(false);
-          setDownloader(false);
         });
     }
+    setDownloader(true);
   };
 
-  // eslint-disable-next-line no-unused-vars
+  useEffect(() => {
+    updateProfile(auth.currentUser, {
+      photoURL: downloadURL,
+    });
+  }, [downloadURL]);
+
+  useEffect(() => {
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        localStorage.setItem("userInfo", JSON.stringify(userLoginInfo(user)));
+        dispatch(userLoginInfo(user));
+        const uid = user.uid;
+        setUserVerify(true);
+      }
+    });
+  }, [auth]);
+
+  const data = useSelector((state) => state.userLoginInfo.userInfo);
+  useEffect(() => {
+    if (!data) {
+      navigate("/");
+    }
+  }, [data]);
 
   const handleLogout = () => {
     signOut(auth)
@@ -155,7 +142,7 @@ function Dashboard() {
           className="relative rounded-full  group bg-white w-[50px] h-[50px] cursor-pointer mx-auto group overflow-hidden"
         >
           <img
-            src={image}
+            src={data.photoURL ? data.photoURL : image}
             className="w-full rounded-full h-full object-cover"
             alt=""
           />
@@ -163,12 +150,19 @@ function Dashboard() {
             <AiOutlineCloudUpload className="absolute text-white left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%]"></AiOutlineCloudUpload>
           </div>
         </div>
+        <div className="mt-2">
+          <h2 className="font-bold text-white text-[12px] text-center">
+            {data.displayName}
+          </h2>
+        </div>
         {/* Home Menu  */}
-        <div className="flex justify-center items-center">
-          <div className="after:bg-white after:content-[''] after:z-[-1] after:top-0 after:left-0 after:w-full after:h-full after:absolute relative mt-8">
-            <LiaHomeSolid className=" text-[30px] text-[#a49bc1] z-[1]"></LiaHomeSolid>
+        <div className="flex justify-center items-center relative mt-8 w-full overflow-hidden">
+          <div className="before:content-[''] before:absolute before:right-0 before:z-[2] before:top-0 before:bg-[#5F35F5] before:rounded-l-md before:w-1 before:h-full after:bg-white py-3 after:rounded-l-md  w-full after:content-[''] after:top-0 after:left-[12px] after:w-full after:h-full after:absolute z-[1]">
+            {/* Background styling for LiaHomeSolid icon */}
+            <LiaHomeSolid className="text-[30px] mx-auto text-[#5F35F5] relative z-[2]"></LiaHomeSolid>
           </div>
         </div>
+
         {/* Chate Menu  */}
         <div className="flex justify-center ">
           <div className=" p-1 rounded-xl mt-8 relative">
@@ -258,7 +252,10 @@ function Dashboard() {
                     </div>
                   )}
                 </button>
-                <button className=" bg-[#2eb861]  text-white h-11 px-3">
+                <button
+                  onClick={downloadURL}
+                  className=" bg-[#2eb861]  text-white h-11 px-3"
+                >
                   <PiDownloadSimpleLight></PiDownloadSimpleLight>
                 </button>
               </div>

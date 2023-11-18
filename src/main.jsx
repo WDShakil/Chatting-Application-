@@ -15,6 +15,7 @@ import Dashboard from "./Components/Dashborad";
 // Redux
 import store from "./store.jsx";
 import { Provider } from "react-redux";
+import Verification from "./Components/Verification/index.jsx";
 
 const router = createBrowserRouter([
   {
@@ -29,6 +30,10 @@ const router = createBrowserRouter([
   {
     path: "/dashboard",
     element: <Dashboard></Dashboard>,
+  },
+  {
+    path: "verification",
+    element: <Verification></Verification>,
   },
 ]);
 
