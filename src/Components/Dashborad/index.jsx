@@ -1,4 +1,3 @@
-import profileimg from "../../assets/profile.png";
 import { LiaHomeSolid } from "react-icons/lia";
 import { BsFillChatDotsFill } from "react-icons/bs";
 import { TfiBell } from "react-icons/tfi";
@@ -28,7 +27,6 @@ import {
 import { useEffect, useState, createRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 
-import Verification from "../Verification";
 import Mainpage from "../MainPage";
 import { userLoginInfo } from "../../slices/userslice";
 
@@ -37,13 +35,13 @@ import { userLoginInfo } from "../../slices/userslice";
 function Dashboard() {
   const auth = getAuth();
 
-  const [userVerify, setUserVerify] = useState(false);
   const [downloader, setDownloader] = useState(false);
   const [cropData, setCropData] = useState(null);
   const [profilePopUp, setProfilePopUp] = useState(false);
 
   const [downloadURL, setDownloadURL] = useState("");
-  const [image, setImage] = useState(profileimg);
+  const data = useSelector((state) => state.userLoginInfo.userInfo);
+  const [image, setImage] = useState(data.photoURL);
 
   // firebase Storage
   const storage = getStorage();
@@ -70,6 +68,8 @@ function Dashboard() {
   };
 
   const getCropData = () => {
+    setDownloader(true);
+
     if (typeof cropperRef.current?.cropper !== "undefined") {
       const storageRef = ref(storage, auth.currentUser.uid);
 
@@ -87,7 +87,6 @@ function Dashboard() {
           console.error("Error uploading or getting download URL:", error);
         });
     }
-    setDownloader(true);
   };
 
   useEffect(() => {
@@ -101,12 +100,9 @@ function Dashboard() {
       if (user.emailVerified) {
         localStorage.setItem("userInfo", JSON.stringify(userLoginInfo(user)));
         dispatch(userLoginInfo(user));
-        setUserVerify(true);
       }
     });
   }, [auth]);
-
-  const data = useSelector((state) => state.userLoginInfo.userInfo);
   useEffect(() => {
     if (!data) {
       navigate("/");
@@ -141,7 +137,7 @@ function Dashboard() {
           className="relative rounded-full  group bg-white w-[50px] h-[50px] cursor-pointer mx-auto group overflow-hidden"
         >
           <img
-            src={data.photoURL ? data.photoURL : image}
+            src={data.photoURL}
             className="w-full rounded-full h-full object-cover"
             alt=""
           />
@@ -196,7 +192,7 @@ function Dashboard() {
         </div>
       </div>
       {/* Menu bar end  */}
-      {userVerify ? <Mainpage></Mainpage> : <Verification></Verification>}
+      <Mainpage></Mainpage>
       {/* profile upload pop up  */}
       {profilePopUp && (
         <div className="w-full bg-[#272727cc] h-full flex justify-center items-center left-0 top-0 absolute">

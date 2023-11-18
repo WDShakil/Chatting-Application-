@@ -1,3 +1,4 @@
+import profileimg from "../../assets/profile.png";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import regimg from "../../assets/regimg.jpg";
@@ -82,6 +83,7 @@ function Registration() {
         .then((user) => {
           updateProfile(auth.currentUser, {
             displayName: name,
+            photoURL: profileimg,
           }).then(() => {
             sendEmailVerification(auth.currentUser)
               .then(() => {
